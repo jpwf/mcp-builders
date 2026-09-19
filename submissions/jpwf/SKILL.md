@@ -4,20 +4,18 @@ description: >
   Use this skill when the user wants to build, review, or improve a Pipefy pipe
   for a software development workflow (backlog, sprint, dev, QA, release). It
   guarantees that cards capture everything a team needs to actually build the
-  software — clear requirements, acceptance criteria, Definition of Ready/Done,
-  and links to code standards. Pairs with pipefy-ai-agents (agent that validates
-  intake) and the workspace steerings (code-style, security, error-handling,
-  testing-guide, git-conventions, documentation-standards).
+  software — clear requirements, testable acceptance criteria, and an enforced
+  Definition of Ready and Definition of Done — so ambiguity is caught before code
+  is written instead of turning into rework. Self-contained: the quality
+  standards live in the skill, not in an external doc.
 tags: [pipefy, software, backlog, requirements, definition-of-ready, quality-gate]
 ---
 
 # Software Development Pipe
 
-Design a Pipefy pipe so that a card cannot advance into development without carrying the information a team needs to build the software correctly the first time. The goal is not "more fields" — it is **the right fields, gated at the right phase**, so ambiguity is caught before code is written.
+Design a Pipefy pipe so a card cannot advance into development without carrying the information a team needs to build the software correctly the first time. The goal is not "more fields" — it is **the right fields, required at the right phase**, so ambiguity is caught before code is written.
 
-Pairs with:
-- [pipefy-ai-agents/SKILL.md](../pipefy-ai-agents/SKILL.md) — attach an AI agent that scores intake completeness and flags gaps (see [Optional: AI intake gate](#optional-ai-intake-gate)).
-- Workspace steerings: `code-style`, `security`, `error-handling`, `testing-guide`, `git-conventions`, `documentation-standards`, `development-standards` — the pipe should make these standards *checklists on the card*, not tribal knowledge.
+If your organization also keeps coding standards, engineering guidelines, or team conventions in a separate document, treat this skill's Definition of Ready / Definition of Done checklists as the *card-level enforcement* of those standards — link the card checklist to whatever standards doc you already maintain.
 
 ---
 
@@ -25,206 +23,201 @@ Pairs with:
 
 Two mistakes to avoid:
 
-1. **Everything on the start form.** Requesters abandon 20-field forms and fill them with junk. Only ask upfront what a requester can genuinely answer.
-2. **Nothing gated.** If any card can move to "Em Desenvolvimento" regardless of content, the form is theater.
+1. **Everything on the start form.** Requesters abandon 20-field forms or fill them with junk. Only ask upfront what a requester can genuinely answer.
+2. **Nothing gated.** If any card can move into "In Development" regardless of content, the form is theater.
 
 The fix: split information across phases and enforce a **Definition of Ready (DoR)** and **Definition of Done (DoD)** as required fields on the *entry* to the phase that needs them.
 
 | Information | Who provides it | Where it lives |
 |---|---|---|
 | Problem / value / requester | Requester | Start form |
-| Refined requirements + acceptance criteria | Product/analyst | "Refinamento" phase (DoR gate) |
-| Technical approach, risks, estimate | Dev/tech lead | "Refinamento" / "Pronto p/ Dev" |
-| Test evidence, review, docs | Dev/QA | "Em Desenvolvimento" → "Revisão" (DoD gate) |
+| Refined requirements + acceptance criteria | Product / analyst | "Refinement" phase (DoR gate) |
+| Technical approach, risks, estimate | Dev / tech lead | "Refinement" / "Ready for Dev" |
+| Test evidence, review, docs | Dev / QA | "In Development" → "Review" (DoD gate) |
 
 ---
 
 ## Reference flow
 
 ```
-[Start form] ──► Backlog ──► Refinamento ──► Pronto p/ Dev ──► Em Desenvolvimento ──► Code Review ──► QA / Testes ──► Pronto p/ Release ──► Concluído
-                                 │ (DoR gate)                        │                                  │ (DoD gate)
-                                 ▼                                   ▼                                  ▼
-                            Bloqueado ◄──────────────── (de qualquer fase de trabalho) ────────────────┘
+[Start form] ──► Backlog ──► Refinement ──► Ready for Dev ──► In Development ──► Code Review ──► QA / Testing ──► Ready for Release ──► Done
+                                 │ (DoR gate)                       │                                 │ (DoD gate)
+                                 ▼                                  ▼                                 ▼
+                             Blocked ◄──────────────── (from any work phase) ─────────────────────────┘
 ```
 
-- **Backlog** — item recebido, ainda não priorizado.
-- **Refinamento** — requisitos detalhados, critérios de aceite escritos, estimativa. **DoR é validada na saída daqui.**
-- **Pronto p/ Dev** — fila priorizada, tudo que o dev precisa está no card.
-- **Em Desenvolvimento** — implementação.
-- **Code Review** — revisão de código (gancho com `code-style`, `security`).
-- **QA / Testes** — validação funcional e de qualidade (gancho com `testing-guide`).
-- **Pronto p/ Release** — **DoD validada**, aguardando deploy.
-- **Concluído** — entregue.
-- **Bloqueado** — fase lateral para impedimentos; card volta para a fase de origem quando desbloqueia.
+- **Backlog** — item received, not yet prioritized.
+- **Refinement** — detailed requirements, acceptance criteria written, estimate. **DoR is validated on exit.**
+- **Ready for Dev** — prioritized queue; everything the dev needs is on the card.
+- **In Development** — implementation.
+- **Code Review** — peer review of the code.
+- **QA / Testing** — functional and quality validation.
+- **Ready for Release** — **DoD validated**, awaiting deploy.
+- **Done** — delivered.
+- **Blocked** — lateral phase for impediments; the card returns to its origin phase when unblocked.
 
-> As **regras de transição** (quais fases um card alcança a partir de outra, incluindo retornos e o lateral Bloqueado) são configuradas na **UI do Pipefy** (Settings → Phases → *cards can be moved to*). As ferramentas de pipe/campos criam fases e campos; as setas do fluxo são de UI.
+> **Phase transition rules** (which phases a card can reach from another, including returns and the lateral Blocked) are configured in the **Pipefy UI** (Settings → Phases → *cards can be moved to*). Pipe/field tools create phases and fields; the flow arrows are UI-only.
 
 ---
 
-## Start form — o mínimo que um requester consegue responder
+## Start form — the minimum a requester can actually answer
 
-Peça só o que agrega no recebimento. Campos sugeridos (crie na UI ou confirme com `get_start_form_fields`, guardando o `internal_id`):
+Ask only what adds value at intake. Suggested fields (create in the UI or confirm with `get_start_form_fields`, keeping each `internal_id`):
 
-| Campo | Tipo | Obrigatório | Por quê |
+| Field | Type | Required | Why |
 |---|---|---|---|
-| Título da demanda | short_text | Sim | Identidade do card |
-| Tipo | select (`Feature`, `Bug`, `Melhoria`, `Débito técnico`, `Spike`) | Sim | Roteamento e template de campos |
-| Descrição do problema / objetivo | long_text | Sim | O "porquê", não o "como" |
-| Valor esperado / impacto | long_text | Sim | Prioização honesta |
-| Solicitante (e-mail) | email | Sim | Notificações e follow-up |
-| Prioridade sugerida | select (`Baixa`, `Média`, `Alta`, `Urgente`) | Não | Sinal, decisão é do PO |
-| Prazo desejado | date | Não | Expectativa, não compromisso |
-| Anexos / evidências | attachment | Não | Prints, logs, mockups |
+| Request title | short_text | Yes | Card identity |
+| Type | select (`Feature`, `Bug`, `Improvement`, `Tech debt`, `Spike`) | Yes | Routing and field template |
+| Problem / objective description | long_text | Yes | The "why", not the "how" |
+| Expected value / impact | long_text | Yes | Honest prioritization |
+| Requester (email) | email | Yes | Notifications and follow-up |
+| Suggested priority | select (`Low`, `Medium`, `High`, `Urgent`) | No | A signal; the call is the PO's |
+| Desired date | date | No | An expectation, not a commitment |
+| Attachments / evidence | attachment | No | Screenshots, logs, mockups |
 
-Para **Bug**, um formulário condicional (ou fase de triagem) deve exigir também: passos para reproduzir, comportamento esperado vs atual, ambiente/versão, e evidência (log/print). Um bug sem repro não é acionável.
+For **Bug**, a conditional form (or triage phase) must also require: steps to reproduce, expected vs actual behavior, environment/version, and evidence (log/screenshot). A bug without reproduction steps is not actionable.
 
 ---
 
-## Definition of Ready (DoR) — gate de saída do Refinamento
+## Definition of Ready (DoR) — exit gate of Refinement
 
-Antes de um card entrar em desenvolvimento, estes campos devem estar preenchidos (torne-os obrigatórios na fase **Refinamento** ou como checklist obrigatório na transição para **Pronto p/ Dev**):
+Before a card enters development, these fields must be filled (make them required on the **Refinement** phase, or as a mandatory checklist on the transition to **Ready for Dev**):
 
-| Campo | Tipo | Conteúdo |
+| Field | Type | Content |
 |---|---|---|
-| Requisitos detalhados | long_text | O que deve ser feito, escopo e não-escopo explícitos |
-| Critérios de aceite | long_text / checklist | Formato **Given/When/Then** ou lista verificável |
-| Regras de negócio | long_text | Restrições, cálculos, casos especiais |
-| Dependências | long_text / connection | Outros cards, times, serviços, APIs |
-| Abordagem técnica | long_text | Arquitetura/decisão de design (link para ADR se relevante — ver `documentation-standards`) |
-| Impacto de segurança | select + long_text | Toca auth/dados sensíveis/PII? (gancho com `security`) |
-| Estimativa | select (Fibonacci: 1,2,3,5,8,13) ou horas | Tamanho relativo |
-| Definição de "pronto" desta demanda | checklist | O DoD específico do card |
+| Detailed requirements | long_text | What to do; explicit scope and out-of-scope |
+| Acceptance criteria | long_text / checklist | **Given/When/Then** format or a verifiable list |
+| Business rules | long_text | Constraints, calculations, special cases |
+| Dependencies | long_text / connection | Other cards, teams, services, APIs |
+| Technical approach | long_text | Architecture / design decision (link an ADR if relevant) |
+| Security impact | select + long_text | Touches auth / sensitive data / PII? If yes, a plan |
+| Estimate | select (Fibonacci: 1,2,3,5,8,13) or hours | Relative size |
+| Card's own "done" definition | checklist | The card-specific DoD |
 
-**Checklist de DoR (todos verdadeiros para sair do Refinamento):**
+**DoR checklist (all true to leave Refinement):**
 
-- [ ] O problema e o valor estão claros e não ambíguos.
-- [ ] Critérios de aceite são testáveis e escritos.
-- [ ] Dependências identificadas e endereçadas (ou marcadas como bloqueio).
-- [ ] Impacto de segurança avaliado; se toca dados sensíveis, plano definido (`security`).
-- [ ] Abordagem técnica esboçada e cabe em uma sprint (ou foi quebrada).
-- [ ] Estimativa registrada.
-- [ ] Critérios de teste conhecidos (`testing-guide`).
+- [ ] The problem and value are clear and unambiguous.
+- [ ] Acceptance criteria are testable and written down.
+- [ ] Dependencies identified and addressed (or flagged as blocking).
+- [ ] Security impact assessed; if sensitive data is involved, a plan exists.
+- [ ] Technical approach sketched and fits in one sprint (or was split).
+- [ ] Estimate recorded.
+- [ ] Test approach known (how this will be verified).
 
 ---
 
-## Definition of Done (DoD) — gate de saída para Release
+## Definition of Done (DoD) — exit gate to Release
 
-Campos/checklist obrigatórios na entrada de **Pronto p/ Release** (ou saída de QA):
+Required fields/checklist on entry to **Ready for Release** (or exit from QA). These are self-contained engineering standards; adjust to your stack, but keep them enforced on the card rather than in a document nobody opens:
 
-| Item DoD | Gancho de steering |
+| DoD item | What "good" looks like |
 |---|---|
-| Código segue convenções (naming, imports, funções pequenas, sem código comentado) | `code-style` |
-| Sem hardcoding de config/secrets; valores via env/settings | `development-standards`, `security` |
-| Tratamento de erros tipado; sem `catch {}` vazio; logs estruturados | `error-handling` |
-| Input validado/sanitizado; sem SQL por concatenação; headers de segurança | `security` |
-| Testes escritos e passando; cobertura ≥ 70% no código novo | `testing-guide` |
-| Code review aprovado (≥ 1 revisor) | `git-conventions` |
-| Commits seguem Conventional Commits; PR ≤ 400 linhas, 1 responsabilidade | `git-conventions` |
-| Documentação atualizada no mesmo PR (API.md, ARCHITECTURE.md, steerings) | `documentation-standards` |
-| Sem dependências não usadas; versões fixas | `development-standards` |
-| Funciona em qualquer ordem / sem estado global de teste | `testing-guide` |
+| Code follows conventions | Consistent naming, ordered imports, small focused functions, no commented-out code |
+| No hardcoded config or secrets | Values come from environment / settings, never literals in code |
+| Typed error handling | No empty `catch {}`; structured logs; user vs system errors distinguished |
+| Input validated and sanitized | No string-concatenated SQL; security headers set where applicable |
+| Tests written and passing | Unit/integration cover new logic and edge cases; coverage ≥ 70% on new code |
+| Code review approved | At least one reviewer signed off |
+| Clean commit history | Conventional Commits; PR scoped to one responsibility, reasonably small |
+| Documentation updated | API/architecture/README updated in the same PR as the change |
+| Dependencies healthy | No unused deps; pinned/exact versions |
+| Tests are deterministic | Pass in any order; no shared global state |
 
-**Checklist de DoD (todos verdadeiros para ir a Release):**
+**DoD checklist (all true to move to Release):**
 
-- [ ] Critérios de aceite atendidos e demonstrados.
-- [ ] Testes unit/integração passando; cobertura do código novo ≥ 70%.
-- [ ] Code review aprovado; PR dentro do padrão de tamanho e commits.
-- [ ] Sem vulnerabilidades conhecidas introduzidas; segredos fora do código.
-- [ ] Documentação e ADRs atualizados quando a mudança exige (`documentation-standards`).
-- [ ] Sem regressões conhecidas; feature flags/rollback definidos se aplicável.
+- [ ] Acceptance criteria met and demonstrated.
+- [ ] Unit/integration tests passing; new-code coverage ≥ 70%.
+- [ ] Code review approved; PR within size and commit conventions.
+- [ ] No known vulnerabilities introduced; secrets kept out of code.
+- [ ] Documentation and ADRs updated where the change requires it.
+- [ ] No known regressions; feature flags / rollback defined if applicable.
 
 ---
 
 ## Field-type cheat sheet (Pipefy)
 
-Ao criar os campos via ferramentas de pipe (`create_pipe_field` / equivalentes) ou UI, use tipos que forçam qualidade de entrada:
+When creating fields via pipe tools (`create_pipe_field` / equivalents) or the UI, use types that force input quality:
 
-| Necessidade | Tipo Pipefy | Nota |
+| Need | Pipefy type | Note |
 |---|---|---|
-| Texto curto controlado | `select` / `radio_vertical` | Prefira enum a texto livre para taxonomia (Tipo, Prioridade) |
-| Texto estruturado | `long_text` | Para requisitos/critérios; use template no help text |
-| Checklist verificável | `checklist_vertical` | DoR/DoD como itens marcáveis |
-| Ligação a outro card | `connector` (pipe relation) | Dependências, épico ↔ história |
-| E-mail do solicitante | `email` | Necessário para notificações |
-| Estimativa | `select` (Fibonacci) | Evita números arbitrários |
-| Evidência | `attachment` | Bug repro, mockups, logs |
-| Datas | `date` / `due_date` | Prazo desejado ≠ compromisso |
+| Controlled short text | `select` / `radio_vertical` | Prefer enum over free text for taxonomy (Type, Priority) |
+| Structured text | `long_text` | For requirements/criteria; put a template in the help text |
+| Verifiable checklist | `checklist_vertical` | DoR/DoD as checkable items |
+| Link to another card | `connector` (pipe relation) | Dependencies, epic ↔ story |
+| Requester email | `email` | Needed for notifications |
+| Estimate | `select` (Fibonacci) | Avoids arbitrary numbers |
+| Evidence | `attachment` | Bug repro, mockups, logs |
+| Dates | `date` / `due_date` | Desired date ≠ commitment |
 
-**Regra:** todo campo que gateia uma transição deve ser **required na fase** (Phase field settings), não apenas no start form. Campos de start form obrigatórios só cobrem o recebimento.
+**Rule:** every field that gates a transition must be **required on the phase** (Phase field settings), not just on the start form. Required start-form fields only cover intake.
 
 ---
 
 ## Build workflow (discover → structure → gate → verify)
 
-Nunca chute IDs de fase, campo ou pipe — descubra sempre.
+Never guess phase, field, or pipe IDs — always discover them.
 
-1. **Metadata** — `get_pipe(pipe_id)` para `uuid`, `phases[].id`, `phases[].name`.
-2. **Start form** — `get_start_form_fields(pipe_id)`; crie/ajuste os campos de recebimento.
-3. **Phase fields** — `get_phase_fields(phase_id)` por fase; adicione os campos de DoR na fase Refinamento e os de DoD antes de Release, marcando os obrigatórios.
-4. **Transições** — configure na UI as setas do fluxo (avanços, retornos, Bloqueado). Documente o mapa de transições no card de setup ou no README do time.
-5. **Gates** — marque required-on-phase os campos de DoR/DoD; opcionalmente adicione a AI intake gate (abaixo).
-6. **Verifique** — mova um card de teste ponta a ponta; confirme que ele **não** avança sem os campos obrigatórios e que os checklists aparecem nas fases certas.
+1. **Metadata** — `get_pipe(pipe_id)` for `uuid`, `phases[].id`, `phases[].name`.
+2. **Start form** — `get_start_form_fields(pipe_id)`; create/adjust intake fields.
+3. **Phase fields** — `get_phase_fields(phase_id)` per phase; add DoR fields to Refinement and DoD fields before Release, marking the required ones.
+4. **Transitions** — configure the flow arrows in the UI (advances, returns, Blocked). Document the transition map in the setup card or the team README.
+5. **Gates** — mark DoR/DoD fields required-on-phase; optionally add the AI intake gate (below).
+6. **Verify** — move a test card end to end; confirm it **cannot** advance without the required fields and that checklists appear on the right phases.
 
 ---
 
 ## Optional: AI intake gate
 
-Use a skill [pipefy-ai-agents](../pipefy-ai-agents/SKILL.md) para adicionar um agente que reforça a qualidade do card sem depender de disciplina humana:
+Add an AI agent that reinforces card quality without relying on human discipline (see a dedicated Pipefy AI-agents guide for the full behavior schema):
 
-- **Behavior 1 — Triagem de completude (`card_created`):** o agente lê os campos do start form (`%{field:<internal_id>}` de descrição, valor, tipo) e, via `update_card` com `inputMode: fill_with_ai`, preenche um campo "Análise de completude" apontando o que falta (ex.: "sem critérios de aceite", "bug sem passos de repro"). Não deixe o agente aprovar/mover sozinho — ele **sinaliza**, humano decide.
-- **Behavior 2 — Rascunho de critérios de aceite (`manually_triggered`):** ao clicar num botão no card, o agente propõe critérios Given/When/Then a partir da descrição, preenchendo um campo de rascunho para o analista revisar.
-- **Behavior 3 — Aviso de segurança (`field_updated` no campo Tipo/Descrição):** se detectar menção a auth, PII ou dados sensíveis, preenche o campo "Impacto de segurança" com um alerta e link para o steering `security`.
+- **Behavior 1 — Completeness triage (`card_created`):** the agent reads the start-form fields (description, value, type) and, via `update_card` with `inputMode: fill_with_ai`, writes a "Completeness analysis" field pointing out what is missing (e.g. "no acceptance criteria", "bug without repro steps"). Do not let the agent approve or move the card by itself — it **flags**, a human decides.
+- **Behavior 2 — Acceptance-criteria draft (`manually_triggered`):** on a card button click, the agent proposes Given/When/Then criteria from the description into a draft field for the analyst to review.
+- **Behavior 3 — Security notice (`field_updated` on Type/Description):** if it detects mentions of auth, PII, or sensitive data, it fills a "Security impact" field with a warning.
 
-Regras de modelagem (detalhes na skill de agents): `send_email_template` para notificar; `update_card` com `inputMode` obrigatório; máximo 5 behaviors; validar com `validate_ai_agent_behaviors` antes de criar. **Consentimento:** só adicione o agente se o usuário pediu IA — caso contrário, sugira e pergunte.
+Modeling rules: `send_email_template` to notify; `update_card` requires `inputMode` on every field entry; **max 5 behaviors per agent**; validate with `validate_ai_agent_behaviors` before creating. **Consent:** only add the agent if the user asked for AI — otherwise suggest it and ask first.
 
 ---
 
 ## Type-specific card templates
 
-Ajuste os campos exigidos por **Tipo** (via campos condicionais ou fases distintas):
+Adjust required fields per **Type** (via conditional fields or distinct phases):
 
-| Tipo | Campos extras exigidos |
+| Type | Extra required fields |
 |---|---|
-| Feature | Critérios de aceite, mockup/UX, impacto em API (`API.md`), plano de teste |
-| Bug | Passos de repro, esperado vs atual, ambiente/versão, evidência, severidade |
-| Melhoria | Baseline atual, meta mensurável, critério de sucesso |
-| Débito técnico | Risco de não fazer, área afetada, plano de refatoração, ADR se muda arquitetura |
-| Spike | Pergunta a responder, timebox, entregável (documento/decisão) |
+| Feature | Acceptance criteria, mockup/UX, API impact, test plan |
+| Bug | Repro steps, expected vs actual, environment/version, evidence, severity |
+| Improvement | Current baseline, measurable goal, success criterion |
+| Tech debt | Risk of not doing it, affected area, refactor plan, ADR if it changes architecture |
+| Spike | Question to answer, timebox, deliverable (document/decision) |
 
 ---
 
 ## Success criteria
 
-- Um card **não avança** para desenvolvimento sem os campos de DoR preenchidos.
-- Critérios de aceite existem e são testáveis antes de codar.
-- DoD é uma checklist visível no card, alinhada aos steerings do repo.
-- Card de teste percorre o fluxo inteiro e os gates bloqueiam quando devem.
-- (Se houver agente) a análise de completude aparece no card e reflete lacunas reais.
+- A card **cannot advance** into development without the DoR fields filled.
+- Acceptance criteria exist and are testable before coding.
+- DoD is a visible checklist on the card, aligned to the team's engineering standards.
+- A test card traverses the whole flow and the gates block when they should.
+- (If an agent exists) the completeness analysis appears on the card and reflects real gaps.
 
 ## Failure modes
 
-- **Start form gigante.** Requesters preenchem lixo. Mova campos de "como" para o Refinamento; deixe no form só o "o quê/porquê".
-- **Campos obrigatórios só no start form.** Não gateiam transições. Torne-os required **na fase** que precisa deles.
-- **Critérios de aceite em texto livre solto.** Sem formato, não são testáveis. Padronize Given/When/Then ou checklist.
-- **DoD como documento externo.** Ninguém abre. Traga como `checklist_vertical` na fase de Release.
-- **Agente que aprova sozinho.** Perde o julgamento humano e pode alucinar em campos vazios. Agente sinaliza; pessoa decide.
-- **Transições sem retorno/bloqueio.** Cards travam ou pulam etapas. Configure retornos e o lateral Bloqueado na UI.
+- **Giant start form.** Requesters fill it with junk. Move "how" fields to Refinement; keep only "what/why" on the form.
+- **Required only on the start form.** Those don't gate transitions. Make them required **on the phase** that needs them.
+- **Free-floating free-text acceptance criteria.** Without a format they aren't testable. Standardize on Given/When/Then or a checklist.
+- **DoD as an external doc.** Nobody opens it. Bring it in as a `checklist_vertical` on the Release phase.
+- **Agent that approves on its own.** Loses human judgment and can hallucinate on empty fields. The agent flags; a person decides.
+- **Transitions with no return/blocked path.** Cards get stuck or skip steps. Configure returns and the lateral Blocked in the UI.
 
 ---
 
 ## Suggestions to evolve this skill
 
-Ideias para aumentar o valor, se você quiser expandir depois:
+Ideas to increase value if you expand later:
 
-1. **SLA por fase + escalonamento.** Campo de data de entrada por fase + automação/agente que notifica quando um card fica parado além do SLA (gancho com pipefy-automations e observability).
-2. **Sincronização com Git/PR.** Registrar no card o link do PR e status de CI (via automação/webhook), fechando o loop entre o pipe e o `git-conventions`.
-3. **Métricas ágeis.** Campos que alimentam lead time, cycle time e throughput; um dashboard (Grafana, dado o contexto do ambiente) lendo esses dados para o time.
-4. **Templates versionados de card por Tipo.** Manter os templates de campos como código/config para recriar o pipe de forma reprodutível em novos times.
-5. **DoR/DoD como steering dedicado.** Extrair as checklists para um steering próprio (`definition-of-ready.md` / `definition-of-done.md`) e referenciá-lo aqui e no code review, evitando divergência.
-6. **Pré-preenchimento por RAG.** Se houver base de conhecimento (docs, ADRs), um data lookup/knowledge base no agente para sugerir requisitos e riscos a partir de demandas similares passadas.
-
-## See also
-
-- [pipefy-ai-agents/SKILL.md](../pipefy-ai-agents/SKILL.md) — agente de intake/notificação.
-- Steerings: `.kiro/steering/code-style.md`, `security.md`, `error-handling.md`, `testing`/`testing-guide`, `git-conventions.md`, `documentation-standards.md`, `development-standards.md`.
+1. **Per-phase SLA + escalation.** A phase-entry date field plus an automation/agent that notifies when a card sits past its SLA.
+2. **Git/PR sync.** Record the PR link and CI status on the card (via automation/webhook), closing the loop between the pipe and your commit conventions.
+3. **Agile metrics.** Fields that feed lead time, cycle time, and throughput; a dashboard reading them for the team.
+4. **Versioned card templates per Type.** Keep field templates as code/config to recreate the pipe reproducibly for new teams.
+5. **DoR/DoD as a shared standard.** Extract the checklists into a standalone team document and reference it from both this pipe and code review, avoiding drift.
+6. **RAG pre-fill.** If a knowledge base of past requests/ADRs exists, a data lookup / knowledge base on the agent can suggest requirements and risks from similar past demands.
